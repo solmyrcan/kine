@@ -112,9 +112,6 @@ func NewVariant(ctx context.Context, driverName, dataSourceName string) (server.
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "setup db")
 	}
-	//if err := setup(dialect.DB); err != nil {
-	//	return nil, nil, errors.Wrap(err, "setup db")
-	//}
 
 	dialect.Migrate(context.Background())
 	if err := dialect.Prepare(); err != nil {
