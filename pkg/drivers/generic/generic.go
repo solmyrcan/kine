@@ -327,9 +327,16 @@ func (d* Generic) Prepare() error {
 		return err
 	}
 
-	d.insertLastInsertIDSQLPrepared, err = d.DB.Prepare(d.InsertLastInsertIDSQL)
-	if err != nil {
-		return err
+	if d.LastInsertID {
+		d.insertLastInsertIDSQLPrepared, err = d.DB.Prepare(d.InsertLastInsertIDSQL)
+		if err != nil {
+			return err
+		}
+	} else {
+		d.insertSQLPrepared, err = d.DB.Prepare(d.InsertSQL)
+		if err != nil {
+			return err
+		}
 	}
 
 	d.getSizeSQLPrepared, err = d.DB.Prepare(d.GetSizeSQL)
@@ -566,8 +573,10 @@ func (d *Generic) Insert(ctx context.Context, key string, create, delete bool, c
 
 	// For DBs that use RETURNING as a keyword instead of implementing LastInsertId.  
 	// We don't prepare the statement though, as the version of sqlite doesn't suppory this keyword.
-	id, err = d.queryInt64(ctx, d.InsertSQL, key, cVal, dVal, createRevision, previousRevision, ttl, value, prevValue)
-
+	//id, err = d.queryInt64(ctx, d.InsertSQL, key, cVal, dVal, createRevision, previousRevision, ttl, value, prevValue)
+	row := d.queryRowPrepared(ctx, d.InsertSQL, d.insertSQLPrepared, key, cVal, dVal, createRevision, previousRevision, ttl, value, prevValue)
+	err = row.Scan()
+	
 	return id, err
 }
 
