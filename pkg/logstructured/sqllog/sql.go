@@ -42,6 +42,7 @@ type Dialect interface {
 	GetRevision(ctx context.Context, revision int64) (*sql.Rows, error)
 	DeleteRevision(ctx context.Context, revision int64) error
 	GetCompactRevision(ctx context.Context) (int64, error)
+	GetCompactTargetRevision(ctx context.Context) (int64, int64, error)
 	SetCompactRevision(ctx context.Context, revision int64) error
 	Fill(ctx context.Context, revision int64) error
 	IsFill(key string) bool
@@ -103,11 +104,11 @@ func (s *SQLLog) compactStart(ctx context.Context) error {
 }
 
 func (s *SQLLog) compact() {
-	var (
-		nextEnd int64
-	)
+	//var (
+	//	nextEnd int64
+	//)
 	t := time.NewTicker(s.d.GetCompactInterval())
-	nextEnd, _ = s.d.CurrentRevision(s.ctx)
+	//nextEnd, _ = s.d.CurrentRevision(s.ctx)
 
 outer:
 	for {
@@ -117,20 +118,23 @@ outer:
 		case <-t.C:
 		}
 
-		currentRev, err := s.d.CurrentRevision(s.ctx)
-		if err != nil {
-			logrus.Errorf("failed to get current revision: %v", err)
-			continue
-		}
+		//currentRev, err := s.d.CurrentRevision(s.ctx)
+		//if err != nil {
+		//	logrus.Errorf("failed to get current revision: %v", err)
+		//	continue
+		//}
 
-		end := nextEnd
-		nextEnd = currentRev
+		//end := nextEnd
+		//nextEnd = currentRev
 
-		cursor, err := s.d.GetCompactRevision(s.ctx)
+		//cursor, err := s.d.GetCompactRevision(s.ctx)
+		cursor, nextEnd, err := s.d.GetCompactTargetRevision(s.ctx)
 		if err != nil {
 			logrus.Errorf("failed to get compact revision: %v", err)
 			continue
 		}
+
+		end := nextEnd
 
 		// leave the last 1000
 		end = end - 1000
@@ -145,7 +149,8 @@ outer:
 				continue outer
 			}
 
-			_, _, events, err := RowsToEvents(rows)
+			//_, _, events, err := RowsToEvents(rows)
+			events, err := RowsToEventsCompact(rows)
 			if err != nil {
 				logrus.Errorf("failed to convert to events: %v", err)
 				continue outer
@@ -261,6 +266,7 @@ func (s *SQLLog) List(ctx context.Context, prefix, startKey string, limit, revis
 	if revision > 0 && len(result) == 0 {
 		// a zero length result won't have the compact revision so get it manually
 		compact, err = s.d.GetCompactRevision(ctx)
+		//compact, _, err = s.d.GetCompactTargetRevision(ctx)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -276,6 +282,23 @@ func (s *SQLLog) List(ctx context.Context, prefix, startKey string, limit, revis
 	}
 
 	return rev, result, err
+}
+
+func RowsToEventsCompact(rows *sql.Rows) ([]*server.Event, error) {
+	var	result  []*server.Event
+	
+	defer rows.Close()
+
+	for rows.Next() {
+		event := &server.Event{}
+		if err := scanCompact(rows, event); err != nil {
+		//if err := scan(rows, &rev, &compact, event); err != nil {
+			return nil, err
+		}
+		result = append(result, event)
+	}
+
+	return result, nil
 }
 
 func RowsToEvents(rows *sql.Rows) (int64, int64, []*server.Event, error) {
@@ -338,6 +361,7 @@ func (s *SQLLog) startWatch() (chan interface{}, error) {
 	}
 
 	pollStart, err := s.d.GetCompactRevision(s.ctx)
+	//pollStart, _ err := s.d.GetCompactTargetRevision(s.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -525,6 +549,33 @@ func scan(rows *sql.Rows, rev *int64, compact *int64, event *server.Event) error
 	}
 
 	*compact = c.Int64
+	return nil
+}
+
+func scanCompact(rows *sql.Rows, event *server.Event) error {
+	event.KV = &server.KeyValue{}
+	event.PrevKV = &server.KeyValue{}
+
+	err := rows.Scan(
+		&event.KV.ModRevision,
+		&event.KV.Key,
+		&event.Create,
+		&event.Delete,
+		&event.KV.CreateRevision,
+		&event.PrevKV.ModRevision,
+		&event.KV.Lease,
+		&event.KV.Value,
+		&event.PrevKV.Value,
+	)
+	if err != nil {
+		return err
+	}
+
+	if event.Create {
+		event.KV.CreateRevision = event.KV.ModRevision
+		event.PrevKV = nil
+	}
+
 	return nil
 }
 

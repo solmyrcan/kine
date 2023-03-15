@@ -455,6 +455,16 @@ func (d *Generic) GetCompactRevision(ctx context.Context) (int64, error) {
 	return id, err
 }
 
+func (d *Generic) GetCompactTargetRevision(ctx context.Context) (int64, int64, error) {
+	var compact, target sql.NullInt64
+	row := d.queryRow(ctx, revisionIntervalSQL)
+	err := row.Scan(&compact, &target)	
+	if err == sql.ErrNoRows {
+		return 0, 0, nil
+	}
+	return compact.Int64, target.Int64, err
+}
+
 // Could not test with just running k8sdqlite - may need unit tests
 func (d *Generic) SetCompactRevision(ctx context.Context, revision int64) error {
 	_, err := d.executePrepared(ctx, d.UpdateCompactSQL, d.updateCompactSQLPrepared, revision)

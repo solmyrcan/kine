@@ -42,7 +42,7 @@ var (
 )
 
 func New(ctx context.Context, dataSourceName string) (server.Backend, error) {
-	backend, _, err := NewVariant(ctx, "sqlite3_wal_truncate", dataSourceName)
+	backend, _, err := NewVariant(ctx, "sqlite3", dataSourceName)
 	return backend, err
 }
 
@@ -51,7 +51,7 @@ func NewVariant(ctx context.Context, driverName, dataSourceName string) (server.
 		if err := os.MkdirAll("./db", 0700); err != nil {
 			return nil, nil, err
 		}
-		dataSourceName = "./db/state.db?_timeout=30000&_txlock=immediate&_journal=WAL&cache=shared"
+		dataSourceName = "./db/state.db?_journal=WAL&cache=shared"
 	}
 
 	dialect, err := generic.Open(ctx, driverName, dataSourceName, "?", false)
