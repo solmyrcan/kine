@@ -36,8 +36,8 @@ var (
 				value BLOB,
 				old_value BLOB
 			)`,
-		`CREATE INDEX IF NOT EXISTS kine_name_index ON kine (name, id)`,
-		`CREATE UNIQUE INDEX IF NOT EXISTS kine_name_prev_revision_uindex ON kine (name, prev_revision)`,
+		//`CREATE INDEX IF NOT EXISTS kine_name_index ON kine (name, id)`,
+		//`CREATE UNIQUE INDEX IF NOT EXISTS kine_name_prev_revision_uindex ON kine (name, prev_revision)`,
 	}
 )
 
@@ -67,7 +67,7 @@ func NewVariant(ctx context.Context, driverName, dataSourceName string) (server.
 		return err
 	}
 	dialect.GetSizeSQL = `SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()`
-	
+
 	// Added but not used in our version - requires porting upstream compaction
 	dialect.CompactSQL = `
 		DELETE FROM kine AS kv
@@ -115,10 +115,24 @@ func NewVariant(ctx context.Context, driverName, dataSourceName string) (server.
 		return nil, nil, errors.Wrap(err, "setup db")
 	}
 
-	dialect.Migrate(context.Background())
+	//dialect.Migrate(context.Background())
+	dropIndices := []string{
+		`DROP INDEX IF EXISTS kine_name_index`,
+		`DROP INDEX IF EXISTS kine_name_prev_revision_uindex`,
+	}
+
+	createIndices := []string{
+		`CREATE INDEX IF NOT EXISTS kine_name_index ON kine (name, id)`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS kine_name_prev_revision_uindex ON kine (name, prev_revision)`,
+	}
+
+	if err := dialect.CheckMigrate(context.Background(), dropIndices, createIndices); err != nil {
+		return nil, nil, err
+	}
+
 	if err := dialect.Prepare(); err != nil {
 		fmt.Println("Prepare() error", err)
-		
+
 		return nil, nil, err
 	}
 
