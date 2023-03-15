@@ -54,10 +54,4 @@ func BenchmarkCreate(b *testing.B) {
 		g.Expect(err).To(BeNil())
 		g.Expect(resp.Succeeded).To(BeTrue())
 	}
-}unc (d *Generic) GetCompactRevision(ctx context.Context) (int64, error) {
-	id, err := d.queryInt64(ctx, compactRevSQL)
-	if err == sql.ErrNoRows {
-		return 0, nil
-	}
-	return id, err
 }

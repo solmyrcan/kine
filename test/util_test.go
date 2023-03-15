@@ -52,26 +52,4 @@ func newKine(tb testing.TB) *clientv3.Client {
 	}
 	return client
 }
-Footer
-© 2023 GitHub, Inc.
-Footer navigation
 
-    Terms
-    Privacy
-    Security
-    Status
-    Docs
-    Contact GitHub
-    Pricing
-    API
-    Training
-    Blog
-    About
-
-unc (d *Generic) GetCompactRevision(ctx context.Context) (int64, error) {
-	id, err := d.queryInt64(ctx, compactRevSQL)
-	if err == sql.ErrNoRows {
-		return 0, nil
-	}
-	return id, err
-}
