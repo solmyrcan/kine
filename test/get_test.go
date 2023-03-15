@@ -70,10 +70,4 @@ func BenchmarkGet(b *testing.B) {
 		}
 	})
 }
-unc (d *Generic) GetCompactRevision(ctx context.Context) (int64, error) {
-	id, err := d.queryInt64(ctx, compactRevSQL)
-	if err == sql.ErrNoRows {
-		return 0, nil
-	}
-	return id, err
-}
+
