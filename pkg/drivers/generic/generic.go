@@ -271,7 +271,7 @@ func Open(ctx context.Context, driverName, dataSourceName string, paramCharacter
 			WHERE
 				kv.name >= ? AND kv.name < ?
 				AND kv.id > ?
-			ORDER BY kv.id ASC`, columns), paramCharacter, numbered),			
+			ORDER BY kv.id ASC`, columns), paramCharacter, numbered),	
 
 		AfterSQL: q(fmt.Sprintf(`
 			SELECT %s
