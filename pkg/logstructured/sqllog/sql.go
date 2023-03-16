@@ -580,6 +580,7 @@ func scan(rows *sql.Rows, rev *int64, compact *int64, event *server.Event) error
 //	return nil
 //}
 
-// func (s *SQLLog) DbSize(ctx context.Context) (int64, error) {
-// 	return s.d.GetSize(ctx)
-// }
+func (s *SQLLog) DbSize(ctx context.Context) (int64, error) {
+ 	return s.d.GetSize(ctx)
+}
+
