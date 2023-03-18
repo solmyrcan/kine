@@ -31,6 +31,7 @@ type Dialect interface {
 	List(ctx context.Context, prefix, startKey string, limit, revision int64, includeDeleted bool) (*sql.Rows, error)
 	Count(ctx context.Context, prefix string) (int64, int64, error)
 	CurrentRevision(ctx context.Context) (int64, error)
+	AfterPrefix(ctx context.Context, prefix string, rev, limit int64) (*sql.Rows, error)
 	After(ctx context.Context, prefix string, rev, limit int64) (*sql.Rows, error)
 	Insert(ctx context.Context, key string, create, delete bool, createRevision, previousRevision int64, ttl int64, value, prevValue []byte) (int64, error)
 	GetRevision(ctx context.Context, revision int64) (*sql.Rows, error)
@@ -51,7 +52,8 @@ func (s *SQLLog) Start(ctx context.Context) (err error) {
 }
 
 func (s *SQLLog) compactStart(ctx context.Context) error {
-	rows, err := s.d.After(ctx, "compact_rev_key", 0, 0)
+	//rows, err := s.d.After(ctx, "compact_rev_key", 0, 0)
+	rows, err := s.d.AfterPrefix(ctx, "compact_rev_key", 0, 0)
 	if err != nil {
 		return err
 	}
